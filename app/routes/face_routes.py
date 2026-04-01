@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Header
 from pydantic import BaseModel
 
-from app.database import users_collection
+from app.database import db
 from app.auth import verify_token
 from app.services.face_service import register_face, verify_face
 from app.utils.response import success_response, error_response

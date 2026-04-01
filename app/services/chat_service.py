@@ -1,7 +1,7 @@
 from datetime import datetime
 from bson import ObjectId
 
-from app.database import messages_collection
+from app.database import db
 from app.models import create_message_document, message_model
 from app.services.encryption_service import encrypt_text, decrypt_text
 
@@ -39,7 +39,7 @@ def save_message(sender_id: str, receiver_id: str, plain_text: str):
         # --------------------------
         # Insert into DB
         # --------------------------
-        result = messages_collection.insert_one(message_doc)
+        result = db.messages.insert_one(message_doc)
 
         return str(result.inserted_id)
 
@@ -144,7 +144,7 @@ def delete_message(message_id: str, user_id: str):
     """
 
     try:
-        msg = messages_collection.find_one({"_id": ObjectId(message_id)})
+        msg = db.messages.find_one({"_id": ObjectId(message_id)})
 
         if not msg:
             raise Exception("Message not found")
@@ -152,7 +152,7 @@ def delete_message(message_id: str, user_id: str):
         if str(msg["sender"]) != user_id:
             raise Exception("Unauthorized delete attempt")
 
-        messages_collection.delete_one({"_id": ObjectId(message_id)})
+        db.messages.delete_one({"_id": ObjectId(message_id)})
 
         return True
 

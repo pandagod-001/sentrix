@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import auth_routes, user_routes, chat_routes, face_routes
+from app.routes import auth_routes, user_routes, chat_routes, face_routes, group_routes, connection_routes
 
 
 # ==============================
@@ -35,7 +35,9 @@ app.add_middleware(
 app.include_router(auth_routes.router)
 app.include_router(user_routes.router)
 app.include_router(chat_routes.router)
-app.include_router(face_routes.router)  
+app.include_router(face_routes.router)
+app.include_router(group_routes.router)
+app.include_router(connection_routes.router)
 
 
 # ==============================

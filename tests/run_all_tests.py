@@ -4,7 +4,7 @@ import asyncio
 import websockets
 
 
-BASE = "http://127.0.0.1:8000"
+BASE = "http://127.0.0.1:8001/api"
 DEVICE = "testDevice"   
 
 
@@ -142,7 +142,7 @@ def chat_login():
 async def ws_test(token):
     print("\n=== WEBSOCKET TEST ===")
 
-    uri = f"ws://127.0.0.1:8000/chat/ws/{token}"
+    uri = f"ws://127.0.0.1:8001/api/chat/ws/{token}"
 
     async with websockets.connect(uri) as ws:
         print("CONNECTED")

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from app.database import users_collection
+from app.database import db
 
 
 # ==============================
@@ -31,8 +31,18 @@ ROLE_RULES = {
 
 def audit_log(user_id: str, action: str, status: str, reason: str = ""):
     try:
-        users_collection.update_one(
-            {"_id": user_id},
+        from bson import ObjectId
+        # Convert user_id to ObjectId if needed
+        if isinstance(user_id, str):
+            try:
+                query_id = ObjectId(user_id)
+            except:
+                query_id = user_id
+        else:
+            query_id = user_id
+            
+        db.users.update_one(
+            {"_id": query_id},
             {
                 "$push": {
                     "audit_logs": {

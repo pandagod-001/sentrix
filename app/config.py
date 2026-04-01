@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+from fastapi import HTTPException, status, Header
+from app.database import db
 
 
 # ==============================
@@ -86,6 +88,56 @@ if len(AES_KEY) < 32:
 # Secret key basic check
 if len(SECRET_KEY) < 32:
     raise Exception("SECRET_KEY should be strong (at least 32 chars)")
+
+
+# ==============================
+# FastAPI Dependency Functions
+# ==============================
+
+def verify_token(authorization: str = Header(None)):
+    """
+    Verify and extract token from Authorization header
+    
+    Used with FastAPI Depends(verify_token)
+    Returns token payload with user_id and role
+    """
+    from app.auth import verify_token as verify_token_func
+    
+    # Extract token from Authorization header
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authentication token"
+        )
+    
+    # Handle "Bearer <token>" format
+    token_str = None
+    if authorization.startswith("Bearer "):
+        token_str = authorization[7:]
+    else:
+        token_str = authorization
+    
+    # Verify token
+    payload = verify_token_func(token_str)
+    
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+    
+    # Normalize payload to use "user_id" instead of "id"
+    if "id" in payload:
+        payload["user_id"] = payload["id"]
+    
+    return payload
+
+
+def get_db():
+    """
+    FastAPI dependency to get database connection
+    """
+    return db
 
 
 # ==============================

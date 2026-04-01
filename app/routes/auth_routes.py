@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from app.database import users_collection
+from app.database import db
 from app.auth import hash_password, verify_password, create_token
 from app.utils.response import success_response, error_response
 
@@ -32,7 +32,7 @@ class LoginRequest(BaseModel):
 @router.post("/register")
 def register(data: RegisterRequest):
     try:
-        existing = users_collection.find_one({"username": data.username})
+        existing = db.users.find_one({"username": data.username})
 
         if existing:
             return error_response("Username already exists")
@@ -52,7 +52,7 @@ def register(data: RegisterRequest):
             "face_encoding": None
         }
 
-        result = users_collection.insert_one(user)
+        result = db.users.insert_one(user)
 
         return success_response({
             "user_id": str(result.inserted_id)
@@ -69,7 +69,7 @@ def register(data: RegisterRequest):
 @router.post("/login")
 def login(data: LoginRequest):
     try:
-        user = users_collection.find_one({"username": data.username})
+        user = db.users.find_one({"username": data.username})
 
         if not user:
             return error_response("User not found")
@@ -84,7 +84,7 @@ def login(data: LoginRequest):
         # DEVICE BINDING
         # -----------------------------
         if user.get("device_id") is None:
-            users_collection.update_one(
+            db.users.update_one(
                 {"_id": user["_id"]},
                 {"$set": {"device_id": data.device_id}}
             )

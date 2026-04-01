@@ -3,7 +3,7 @@ import websockets
 import json
 
 async def run(token):
-    uri = f"ws://127.0.0.1:8000/chat/ws/{token}"
+    uri = f"ws://127.0.0.1:8001/api/chat/ws/{token}"
 
     async with websockets.connect(uri) as ws:
         print("CONNECTED")
