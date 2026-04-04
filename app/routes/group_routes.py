@@ -42,29 +42,38 @@ def create_group(request: dict, token: str = Depends(verify_token)):
 
         return result
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/create-family")
-def create_family_group(token: str = Depends(verify_token)):
+def create_family_group(request: dict, token: str = Depends(verify_token)):
     """
-    Create or get family group for authenticated personnel
-
-    Personnel can only have ONE family group
+    Create family group for a personnel (authority only)
     """
     try:
         from ..database import db
         group_service = GroupService(db)
         user_id = token.get("user_id")
+        personnel_id = request.get("personnel_id")
 
-        result = group_service.create_family_group(personnel_id=user_id)
+        if not personnel_id:
+            raise HTTPException(status_code=400, detail="personnel_id is required")
+
+        result = group_service.create_family_group(
+            authority_id=user_id,
+            personnel_id=personnel_id
+        )
 
         if result.get("status") == "error":
             raise HTTPException(status_code=400, detail=result.get("message"))
 
         return result
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -82,6 +91,8 @@ def list_user_groups(token: str = Depends(verify_token)):
         result = group_service.list_groups_for_user(user_id)
         return result
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -101,6 +112,8 @@ def get_group_members(group_id: str, token: str = Depends(verify_token)):
 
         return result
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -131,12 +144,19 @@ def add_member_to_group(group_id: str, request: dict, token: str = Depends(verif
 
         return result
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/{group_id}/remove-member")
-def remove_member_from_group(group_id: str, request: dict, token: str = Depends(verify_token)):
+def remove_member_from_group(
+    group_id: str,
+    request: dict | None = None,
+    member_id: str | None = None,
+    token: str = Depends(verify_token)
+):
     """
     Remove a member from a group (authority only)
 
@@ -149,10 +169,14 @@ def remove_member_from_group(group_id: str, request: dict, token: str = Depends(
         from ..database import db
         group_service = GroupService(db)
         user_id = token.get("user_id")
+        target_member_id = member_id or (request or {}).get("member_id")
+
+        if not target_member_id:
+            raise HTTPException(status_code=400, detail="member_id is required")
 
         result = group_service.remove_member_from_group(
             group_id=group_id,
-            member_id=request.get("member_id"),
+            member_id=target_member_id,
             authorized_by=user_id
         )
 
@@ -161,12 +185,14 @@ def remove_member_from_group(group_id: str, request: dict, token: str = Depends(
 
         return result
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/{group_id}")
-async def delete_group(group_id: str, token: str = Depends(verify_token), db=Depends(get_db)):
+def delete_group(group_id: str, token: str = Depends(verify_token), db=Depends(get_db)):
     """
     Delete a group (authority only)
     """
@@ -174,7 +200,7 @@ async def delete_group(group_id: str, token: str = Depends(verify_token), db=Dep
         group_service = GroupService(db)
         user_id = token.get("user_id")
 
-        result = await group_service.delete_group(
+        result = group_service.delete_group(
             group_id=group_id,
             authorized_by=user_id
         )
@@ -184,5 +210,7 @@ async def delete_group(group_id: str, token: str = Depends(verify_token), db=Dep
 
         return result
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -40,10 +40,10 @@ class ConnectionService:
             else:
                 user_id = requester_id
             
-            print(f"[DEBUG] Looking for user with _id={user_id} (type={type(user_id).__name__})", flush=True)
-            print(f"[DEBUG] Users in database: {len(self.db.users.data)}", flush=True)
+            print(f"[DEBUG] Looking for user with _id={user_id} (type={type(user_id).__name__})")
+            print(f"[DEBUG] Users in database: {len(self.db.users.data)}")
             for i, user in enumerate(self.db.users.data):
-                print(f"  User {i}: _id={user.get('_id')} (type={type(user.get('_id')).__name__}), username={user.get('username')}", flush=True)
+                print(f"  User {i}: _id={user.get('_id')} (type={type(user.get('_id')).__name__}), username={user.get('username')}")
                 
             requester = self.db.users.find_one({"_id": user_id})
             

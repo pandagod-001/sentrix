@@ -1,11 +1,18 @@
 import base64
+import json
+import os
 import requests
 import asyncio
 import websockets
+from datetime import datetime, UTC
 
 
-BASE = "http://127.0.0.1:8001/api"
+BASE = os.getenv("SENTRIX_TEST_BASE", "http://127.0.0.1:8001/api")
 DEVICE = "testDevice"   
+
+
+def _is_success(payload: dict) -> bool:
+    return payload.get("success") is True or payload.get("status") == "success"
 
 
 # ==============================
@@ -24,10 +31,15 @@ def load_image():
 def auth_run():
     print("\n=== AUTH TEST ===")
 
+    suffix = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
+    admin_username = f"admin_{suffix}"
+    soldier_username = f"soldier_{suffix}"
+    soldier2_username = f"soldier2_{suffix}"
+
     users = [
-        {"username": "admin", "password": "1234", "role": "authority"},
-        {"username": "soldier", "password": "1234", "role": "personnel"},
-        {"username": "family", "password": "1234", "role": "dependent"},
+        {"username": admin_username, "password": "1234", "role": "authority"},
+        {"username": soldier_username, "password": "1234", "role": "personnel"},
+        {"username": soldier2_username, "password": "1234", "role": "personnel"},
     ]
 
     ids = {}
@@ -36,40 +48,46 @@ def auth_run():
         r = requests.post(f"{BASE}/auth/register", json=u).json()
         print("REGISTER:", r)
 
-        if r.get("status") != "success":
+        if not _is_success(r):
             raise Exception("AUTH FAILED")
 
         ids[u["username"]] = r["data"]["user_id"]
 
-    return ids
+    return {
+        "ids": ids,
+        "admin": admin_username,
+        "soldier": soldier_username,
+        "soldier2": soldier2_username,
+    }
 
 
 # ==============================
 # USER APPROVAL + LOGIN
 # ==============================
 
-def user_run(user_ids):
+def user_run(auth_ctx):
     print("\n=== USER CONTROL TEST ===")
+    user_ids = auth_ctx["ids"]
 
     # Admin login
     r = requests.post(f"{BASE}/auth/login", json={
-        "username": "admin",
+        "username": auth_ctx["admin"],
         "password": "1234",
         "device_id": DEVICE
     }).json()
 
     print("LOGIN RESPONSE:", r)
 
-    if r.get("status") != "success":
+    if not _is_success(r):
         raise Exception("ADMIN LOGIN FAILED")
 
-    token = r["data"]["access_token"]
+    token = r["data"].get("access_token") or r["data"].get("token")
     headers = {"Authorization": f"Bearer {token}"}
 
     print("ADMIN LOGIN SUCCESS")
 
     # Approve users
-    for u in ["soldier", "family"]:
+    for u in [auth_ctx["soldier"], auth_ctx["soldier2"]]:
         r = requests.post(
             f"{BASE}/users/approve",
             json={"user_id": user_ids[u]},
@@ -116,33 +134,35 @@ def face_run(token):
 # USER LOGIN FOR CHAT
 # ==============================
 
-def chat_login():
+def chat_login(auth_ctx, username_key):
     print("\n=== LOGIN USER (CHAT TEST) ===")
 
     r = requests.post(f"{BASE}/auth/login", json={
-        "username": "soldier",
+        "username": auth_ctx[username_key],
         "password": "1234",
         "device_id": DEVICE
     }).json()
 
     print("LOGIN RESPONSE:", r)
 
-    if r.get("status") != "success":
+    if not _is_success(r):
         raise Exception("USER LOGIN FAILED")
 
     print("USER LOGIN SUCCESS")
 
-    return r["data"]["access_token"]
+    return r["data"].get("access_token") or r["data"].get("token")
 
 
 # ==============================
 # WEBSOCKET TEST
 # ==============================
 
-async def ws_test(token):
+async def ws_test(token, receiver_user_id):
     print("\n=== WEBSOCKET TEST ===")
 
-    uri = f"ws://127.0.0.1:8001/api/chat/ws/{token}"
+    ws_base = BASE.replace("http://", "ws://").replace("https://", "wss://")
+    ws_base = ws_base[:-4] if ws_base.endswith("/api") else ws_base
+    uri = f"{ws_base}/api/chat/ws/{token}"
 
     async with websockets.connect(uri) as ws:
         print("CONNECTED")
@@ -152,9 +172,11 @@ async def ws_test(token):
         print("RESPONSE:", response)
 
         # send test message
-        await ws.send(
-            '{"receiver_id":"2","message":"hello","device_id":"testDevice"}'
-        )
+        await ws.send(json.dumps({
+            "receiver_id": receiver_user_id,
+            "message": "hello",
+            "device_id": DEVICE
+        }))
 
         response = await ws.recv()
         print("MESSAGE RESPONSE:", response)
@@ -167,21 +189,26 @@ async def ws_test(token):
 def main():
     print("\nRUNNING FULL BACKEND TEST SUITE")
 
-    user_ids = auth_run()
+    auth_ctx = auth_run()
 
-    admin_token = user_run(user_ids)
+    admin_token = user_run(auth_ctx)
 
     #  FACE FOR ADMIN
     face_run(admin_token)
 
     # Login soldier
-    user_token = chat_login()
+    user_token = chat_login(auth_ctx, "soldier")
+
+    # Login second personnel and register face for valid websocket receiver
+    user2_token = chat_login(auth_ctx, "soldier2")
 
     #  FACE FOR USER (CRITICAL)
     face_run(user_token)
+    face_run(user2_token)
 
     # WebSocket test
-    asyncio.run(ws_test(user_token))
+    receiver_id = auth_ctx["ids"][auth_ctx["soldier2"]]
+    asyncio.run(ws_test(user_token, receiver_id))
 
     print("\nALL TESTS COMPLETED SUCCESSFULLY")
 

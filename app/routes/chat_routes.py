@@ -117,6 +117,7 @@ def get_chats(token: str = Depends(verify_token)):
         chats = list(chats_collection.find({
             "participants": user_id
         }))
+        groups = list(db.groups.find({"members": user_id}))
 
         chat_list = []
         for chat in chats:
@@ -131,15 +132,38 @@ def get_chats(token: str = Depends(verify_token)):
                     name = other_user.get("username") if other_user else "Unknown"
                 else:
                     name = "Unknown"
+                participant_id = str(other_id) if other_id else None
             else:
                 name = chat.get("name", "Group Chat")
+                participant_id = None
+
+            # Best-effort latest message preview for personal/group chats.
+            latest_message = db.messages.find_one({"group_id": chat.get("_id")})
+            if not latest_message and chat_type == "personal":
+                latest_message = db.messages.find_one({
+                    "sender": {"$in": participants},
+                    "receiver": {"$in": participants}
+                })
 
             chat_list.append({
                 "id": str(chat.get("_id")),
                 "name": name,
+                "participant_id": participant_id,
                 "type": chat_type,
-                "last_message": "No messages",
-                "last_message_time": None
+                "last_message": latest_message.get("message") if latest_message else "No messages",
+                "last_message_time": latest_message.get("timestamp") if latest_message else None
+            })
+
+        # Include groups in chat list view as group conversations.
+        for group in groups:
+            latest_group_message = db.messages.find_one({"group_id": group.get("_id")})
+            chat_list.append({
+                "id": str(group.get("_id")),
+                "name": group.get("name", "Group Chat"),
+                "participant_id": None,
+                "type": "group",
+                "last_message": latest_group_message.get("message") if latest_group_message else "No messages",
+                "last_message_time": latest_group_message.get("timestamp") if latest_group_message else None
             })
 
         return {
@@ -152,7 +176,7 @@ def get_chats(token: str = Depends(verify_token)):
 
 
 @router.get("/{chat_id}/messages")
-async def get_chat_messages(
+def get_chat_messages(
     chat_id: str,
     token: str = Depends(verify_token),
     db=Depends(get_db),
@@ -169,16 +193,34 @@ async def get_chat_messages(
         chat_id = ObjectId(chat_id)
 
         # Verify user is in chat
-        chat = await db.chats.find_one({"_id": chat_id})
-        if not chat or user_id not in chat.get("participants", []):
-            raise HTTPException(status_code=403, detail="Access denied")
+        chat = db.chats.find_one({"_id": chat_id})
 
-        messages = await db.messages.find({
-            "$or": [
-                {"receiver": user_id, "sender": {"$in": chat.get("participants", [])}},
-                {"group_id": chat_id}
-            ]
-        }).sort("_id", -1).limit(limit).to_list(None)
+        if chat:
+            if user_id not in chat.get("participants", []):
+                raise HTTPException(status_code=403, detail="Access denied")
+
+            if chat.get("type") == "personal":
+                participants = chat.get("participants", [])
+                messages_cursor = db.messages.find({
+                    "$or": [
+                        {"sender": {"$in": participants}, "receiver": {"$in": participants}},
+                        {"sender": {"$in": participants}, "group_id": chat_id}
+                    ]
+                })
+            else:
+                messages_cursor = db.messages.find({"group_id": chat_id})
+        else:
+            group = db.groups.find_one({"_id": chat_id})
+            if not group or user_id not in group.get("members", []):
+                raise HTTPException(status_code=403, detail="Access denied")
+            messages_cursor = db.messages.find({"group_id": chat_id})
+
+        if hasattr(messages_cursor, "sort"):
+            messages_cursor = messages_cursor.sort("_id", -1)
+        if hasattr(messages_cursor, "limit"):
+            messages_cursor = messages_cursor.limit(limit)
+        messages = list(messages_cursor)
+        messages = messages[:limit]
 
         messages.reverse()  # Reverse to show chronological order
 
@@ -267,7 +309,7 @@ async def websocket_chat(websocket: WebSocket, token: str, db=Depends(get_db)):
             return
 
         user_id = payload.get("user_id")
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        user = db.users.find_one({"_id": ObjectId(user_id)})
 
         if not user:
             await websocket.close(code=1008, reason="User not found")
@@ -303,14 +345,14 @@ async def websocket_chat(websocket: WebSocket, token: str, db=Depends(get_db)):
 
             # DSIE Check
             dsie = DSIEEngine(db)
-            decision = await dsie.check_communication(user_id, receiver_id, group_id)
+            decision = dsie.check_communication(user_id, receiver_id, group_id)
 
             if decision.get("decision") != DSIEDecision.ALLOW:
                 await websocket.send_json({
                     "error": decision.get("reason"),
                     "type": "blocked"
                 })
-                await dsie.log_security_event(
+                dsie.log_security_event(
                     user_id,
                     "message_blocked",
                     decision.get("reason")
@@ -324,7 +366,7 @@ async def websocket_chat(websocket: WebSocket, token: str, db=Depends(get_db)):
                 receiver_id=receiver_id,
                 group_id=group_id
             )
-            msg_result = await db.messages.insert_one(msg_doc)
+            msg_result = db.messages.insert_one(msg_doc)
 
             # Prepare response
             response = {
@@ -345,7 +387,7 @@ async def websocket_chat(websocket: WebSocket, token: str, db=Depends(get_db)):
 
             elif group_id:
                 # Group chat
-                group = await db.groups.find_one({"_id": ObjectId(group_id)})
+                group = db.groups.find_one({"_id": ObjectId(group_id)})
                 if group:
                     for member_id in group.get("members", []):
                         if str(member_id) != user_id:
@@ -357,7 +399,7 @@ async def websocket_chat(websocket: WebSocket, token: str, db=Depends(get_db)):
             await websocket.send_json(response)
 
             # Log
-            await dsie.log_security_event(
+            dsie.log_security_event(
                 user_id,
                 "message_sent",
                 f"Target: {receiver_id or group_id}"

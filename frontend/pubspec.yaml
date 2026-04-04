@@ -1,0 +1,109 @@
+name: sentrix
+description: SENTRIX - Secure, role-based defence communication app.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  provider: ^6.0.0
+
+  # Routing
+  go_router: ^13.0.0
+
+  # API & Networking
+  http: ^1.1.0
+  dio: ^5.3.0
+
+  # LocalStorage & Database
+  shared_preferences: ^2.2.0
+  hive: ^2.2.0
+  sqflite: ^2.3.0
+  path_provider: ^2.1.0
+
+  # Authentication & Security
+  flutter_secure_storage: ^9.0.0
+  local_auth: ^2.1.0
+
+  # Face/Biometric
+  google_mlkit_face_detection: ^0.7.0
+
+  # QR Code
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^3.5.0
+
+  # Real-time Messaging
+  socket_io_client: ^2.0.0
+
+  # Notifications
+  flutter_local_notifications: ^14.1.0
+  firebase_messaging: ^14.6.0
+
+  # Image Handling
+  image: ^4.0.0
+  image_picker: ^0.8.9
+  cached_network_image: ^3.2.3
+
+  # Camera
+  camera: ^0.10.5
+
+  # Date & Time
+  intl: ^0.18.1
+
+  # Logging & Analytics
+  logger: ^1.4.0
+  firebase_analytics: ^10.4.0
+
+  # Firebase
+  firebase_core: ^2.24.0
+  firebase_auth: ^4.10.0
+  firebase_database: ^10.2.0
+
+  # UI & Design
+  flutter_svg: ^2.0.0
+  google_fonts: ^6.0.0
+
+  # Utilities
+  get_it: ^7.6.0
+  equatable: ^2.0.0
+  dartz: ^0.10.0
+  uuid: ^4.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^3.0.0
+  mockito: ^5.4.0
+  build_runner: ^2.4.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700

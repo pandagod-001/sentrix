@@ -67,21 +67,50 @@ def verify_face(stored_encoding_base64: str, image_base64: str):
         current_hash = hashlib.sha256(image_bytes).digest()
         current_encoding = base64.b64encode(current_hash).decode()
         
-        # For testing: allow exact match or 80% similarity
-        # In production, calculate euclidean distance < threshold
-        
-        # Mock: Check if encoding exists (simple validation)
         if not stored_encoding_base64:
             return False
-            
-        # Mock similarity (in real impl: distance check)
-        # For demo, just verify both encodings are valid base64
+
+        # Mock comparison: use deterministic encoding equality.
+        # This keeps the backend database-backed without external ML deps.
         try:
             base64.b64decode(stored_encoding_base64)
             base64.b64decode(current_encoding)
-            return True  # In production: distance < 0.6
+            return stored_encoding_base64 == current_encoding
         except:
             return False
 
     except Exception as e:
         raise Exception(f"Face verification failed: {str(e)}")
+
+
+def scan_face_database(image_base64: str, users_collection):
+    """
+    Compare a captured face against stored encodings in the database.
+
+    Returns a match payload if a registered user is found.
+    """
+    try:
+        scanned_encoding = register_face(image_base64)
+        for user in users_collection.find({}):
+            stored_encoding = user.get("face_encoding")
+            if not stored_encoding:
+                continue
+
+            if stored_encoding == scanned_encoding:
+                return {
+                    "matched": True,
+                    "user_id": str(user.get("_id")),
+                    "name": user.get("username"),
+                    "role": user.get("role"),
+                    "allowed": user.get("role") in ["personnel", "dependent", "authority"],
+                    "accuracy": 1.0,
+                }
+
+        return {
+            "matched": False,
+            "allowed": False,
+            "accuracy": 0.0,
+        }
+
+    except Exception as e:
+        raise Exception(f"Face database scan failed: {str(e)}")

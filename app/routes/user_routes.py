@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from bson import ObjectId
+from datetime import datetime
 from ..database import db
 from ..config import verify_token, get_db
 from ..services.dsie_service import DSIEEngine
@@ -40,12 +41,12 @@ def get_current_user_profile(token: str = Depends(verify_token)):
 
 
 @router.get("/{user_id}")
-async def get_user_profile(user_id: str, token: str = Depends(verify_token), db=Depends(get_db)):
+def get_user_profile(user_id: str, token: str = Depends(verify_token), db=Depends(get_db)):
     """
     Get another user's profile (basic info only)
     """
     try:
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        user = db.users.find_one({"_id": ObjectId(user_id)})
 
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
@@ -62,7 +63,7 @@ async def get_user_profile(user_id: str, token: str = Depends(verify_token), db=
 @router.get("")
 def get_all_users(token: str = Depends(verify_token)):
     """
-    Get all users (authority only)
+    Get all approved users for chat/user selection
     """
     try:
         from ..database import users_collection
@@ -70,11 +71,14 @@ def get_all_users(token: str = Depends(verify_token)):
         
         requester = users_collection.find_one({"_id": ObjectId(user_id)})
 
-        if requester and requester.get("role") != "authority":
-            raise HTTPException(status_code=403, detail="Only authority can view all users")
+        if not requester:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        if not requester.get("is_approved"):
+            raise HTTPException(status_code=403, detail="User not approved")
 
         # Handle both real and fake collections
-        result = users_collection.find({})
+        result = users_collection.find({"is_approved": True})
         
         # Check if result has to_list method (fake collection) or is cursor (real MongoDB)
         if hasattr(result, 'to_list'):
@@ -94,6 +98,7 @@ def get_all_users(token: str = Depends(verify_token)):
                 "is_approved": u.get("is_approved")
             }
             for u in all_users
+            if str(u.get("_id")) != str(user_id) and u.get("is_approved")
         ]
         
         return {
@@ -149,12 +154,63 @@ def approve_user(user_id: str, token: str = Depends(verify_token)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/approve")
+def approve_user_compat(request: dict, token: str = Depends(verify_token)):
+    """
+    Backward-compatible approval route.
+
+    Accepts request body: {"user_id": "..."}
+    """
+    user_id = request.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    return approve_user(user_id, token)
+
+
 # ==============================
 # DEPENDENT MANAGEMENT
+@router.post("/{user_id}/reject")
+def reject_user(user_id: str, request: dict, token: str = Depends(verify_token)):
+    """
+    Reject a user (authority only)
+    """
+    try:
+        from ..database import users_collection
+        authority_id = token.get("user_id")
+        authority = users_collection.find_one({"_id": ObjectId(authority_id)})
+
+        if authority.get("role") != "authority":
+            raise HTTPException(status_code=403, detail="Only authority can reject users")
+
+        user_to_reject = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user_to_reject:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        reason = request.get("reason", "Admin rejection")
+        users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {
+                "is_approved": False,
+                "rejection_reason": reason,
+                "rejected_at": datetime.utcnow(),
+                "rejected_by": ObjectId(authority_id)
+            }}
+        )
+
+        return {
+            "status": "success",
+            "message": f"User {user_to_reject.get('username')} rejected"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ==============================
 
 @router.post("/{personnel_id}/add-dependent")
-async def add_dependent(personnel_id: str, request: dict, token: str = Depends(verify_token), db=Depends(get_db)):
+def add_dependent(personnel_id: str, request: dict, token: str = Depends(verify_token), db=Depends(get_db)):
     """
     Add a dependent to a personnel (authority only)
 
@@ -171,12 +227,12 @@ async def add_dependent(personnel_id: str, request: dict, token: str = Depends(v
     """
     try:
         authority_id = token.get("user_id")
-        authority = await db.users.find_one({"_id": ObjectId(authority_id)})
+        authority = db.users.find_one({"_id": ObjectId(authority_id)})
 
         if authority.get("role") != "authority":
             raise HTTPException(status_code=403, detail="Only authority can add dependents")
 
-        personnel = await db.users.find_one({"_id": ObjectId(personnel_id)})
+        personnel = db.users.find_one({"_id": ObjectId(personnel_id)})
 
         if not personnel or personnel.get("role") != "personnel":
             raise HTTPException(status_code=404, detail="Personnel not found")
@@ -199,14 +255,14 @@ async def add_dependent(personnel_id: str, request: dict, token: str = Depends(v
             "linked_personnel_id": ObjectId(personnel_id),
             "dependents": [],
             "audit_logs": [],
-            "created_at": ObjectId()
+            "created_at": datetime.utcnow()
         }
 
-        result = await db.users.insert_one(dependent_doc)
+        result = db.users.insert_one(dependent_doc)
         dependent_id = result.inserted_id
 
         # Add to personnel's dependents list
-        await db.users.update_one(
+        db.users.update_one(
             {"_id": ObjectId(personnel_id)},
             {
                 "$push": {
@@ -220,7 +276,7 @@ async def add_dependent(personnel_id: str, request: dict, token: str = Depends(v
 
         # Log event
         dsie = DSIEEngine(db)
-        await dsie.log_security_event(
+        dsie.log_security_event(
             authority_id,
             "dependent_created",
             f"Dependent '{dependent_name}' created for personnel {personnel_id}"
@@ -237,7 +293,7 @@ async def add_dependent(personnel_id: str, request: dict, token: str = Depends(v
 
 
 @router.get("/{personnel_id}/dependents")
-async def get_dependents(personnel_id: str, token: str = Depends(verify_token), db=Depends(get_db)):
+def get_dependents(personnel_id: str, token: str = Depends(verify_token), db=Depends(get_db)):
     """
     Get all dependents of a personnel
 
@@ -248,9 +304,9 @@ async def get_dependents(personnel_id: str, token: str = Depends(verify_token), 
     """
     try:
         requester_id = token.get("user_id")
-        requester = await db.users.find_one({"_id": ObjectId(requester_id)})
+        requester = db.users.find_one({"_id": ObjectId(requester_id)})
 
-        personnel = await db.users.find_one({"_id": ObjectId(personnel_id)})
+        personnel = db.users.find_one({"_id": ObjectId(personnel_id)})
 
         if not personnel or personnel.get("role") != "personnel":
             raise HTTPException(status_code=404, detail="Personnel not found")
@@ -283,18 +339,18 @@ async def get_dependents(personnel_id: str, token: str = Depends(verify_token), 
 
 
 @router.delete("/{dependent_id}")
-async def remove_dependent(dependent_id: str, token: str = Depends(verify_token), db=Depends(get_db)):
+def remove_dependent(dependent_id: str, token: str = Depends(verify_token), db=Depends(get_db)):
     """
     Remove a dependent (authority only)
     """
     try:
         authority_id = token.get("user_id")
-        authority = await db.users.find_one({"_id": ObjectId(authority_id)})
+        authority = db.users.find_one({"_id": ObjectId(authority_id)})
 
         if authority.get("role") != "authority":
             raise HTTPException(status_code=403, detail="Only authority can remove dependents")
 
-        dependent = await db.users.find_one({"_id": ObjectId(dependent_id)})
+        dependent = db.users.find_one({"_id": ObjectId(dependent_id)})
 
         if not dependent or dependent.get("role") != "dependent":
             raise HTTPException(status_code=404, detail="Dependent not found")
@@ -302,7 +358,7 @@ async def remove_dependent(dependent_id: str, token: str = Depends(verify_token)
         # Remove from personnel's dependents list
         personnel_id = dependent.get("linked_personnel_id")
         if personnel_id:
-            await db.users.update_one(
+            db.users.update_one(
                 {"_id": personnel_id},
                 {
                     "$pull": {
@@ -312,11 +368,11 @@ async def remove_dependent(dependent_id: str, token: str = Depends(verify_token)
             )
 
         # Delete dependent user
-        await db.users.delete_one({"_id": ObjectId(dependent_id)})
+        db.users.delete_one({"_id": ObjectId(dependent_id)})
 
         # Log event
         dsie = DSIEEngine(db)
-        await dsie.log_security_event(
+        dsie.log_security_event(
             authority_id,
             "dependent_removed",
             f"Dependent {dependent_id} removed"

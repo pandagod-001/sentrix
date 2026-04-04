@@ -127,50 +127,12 @@ class DSIEEngine:
         Validate role-based communication boundaries
 
         Allowed patterns:
-        - Personnel ↔ Personnel
-        - Personnel ↔ Dependent (if linked)
-        - Dependent ↔ Personnel (if linked)
-        NOT allowed:
-        - Dependent ↔ Dependent
-        - External communication outside verified relationships
+        - Any approved user ↔ any approved user
         """
-        sender_role = sender.get("role")
-        receiver_role = receiver.get("role")
+        if sender.get("is_approved") and receiver.get("is_approved"):
+            return {"allowed": True, "reason": "Approved user communication allowed"}
 
-        # Both personnel
-        if sender_role == "personnel" and receiver_role == "personnel":
-            return {"allowed": True, "reason": "Personnel-to-personnel communication allowed"}
-
-        # Personnel to dependent
-        if sender_role == "personnel" and receiver_role == "dependent":
-            linked_personnel = receiver.get("linked_personnel_id")
-            if str(linked_personnel) == str(sender.get("_id")):
-                return {"allowed": True, "reason": "Personnel can communicate with linked dependent"}
-            else:
-                return {
-                    "allowed": False,
-                    "reason": "Personnel cannot communicate with unlinked dependent"
-                }
-
-        # Dependent to personnel
-        if sender_role == "dependent" and receiver_role == "personnel":
-            linked_personnel = sender.get("linked_personnel_id")
-            if str(linked_personnel) == str(receiver.get("_id")):
-                return {"allowed": True, "reason": "Dependent can communicate with linked personnel"}
-            else:
-                return {
-                    "allowed": False,
-                    "reason": "Dependent cannot communicate with unlinked personnel"
-                }
-
-        # Dependent to dependent (NOT ALLOWED)
-        if sender_role == "dependent" and receiver_role == "dependent":
-            return {
-                "allowed": False,
-                "reason": "Dependents cannot communicate with other dependents"
-            }
-
-        return {"allowed": False, "reason": "Invalid communication pattern"}
+        return {"allowed": False, "reason": "User not approved"}
 
     def check_device_verification(self, user_id: str, device_id: str) -> dict:
         """

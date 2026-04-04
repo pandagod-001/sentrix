@@ -14,7 +14,7 @@ ROLE_RULES = {
     },
     "personnel": {
         "can_chat_with": ["personnel", "dependent"],
-        "can_create_group": True,
+        "can_create_group": False,
         "restricted": False
     },
     "authority": {

@@ -46,11 +46,22 @@ class GroupService:
                     "message": f"Invalid members (must be personnel): {invalid_members}"
                 }
 
+            # Ensure group creator is always a member so the group appears in their list.
+            member_ids = []
+            for member_id in members:
+                obj_id = ObjectId(member_id)
+                if obj_id not in member_ids:
+                    member_ids.append(obj_id)
+
+            creator_id = ObjectId(created_by)
+            if creator_id not in member_ids:
+                member_ids.append(creator_id)
+
             group_doc = {
                 "name": name,
                 "type": "official",
-                "created_by": ObjectId(created_by),
-                "members": [ObjectId(m) for m in members],
+                "created_by": creator_id,
+                "members": member_ids,
                 "created_at": datetime.utcnow()
             }
 
@@ -63,11 +74,12 @@ class GroupService:
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
-    def create_family_group(self, personnel_id: str) -> dict:
+    def create_family_group(self, authority_id: str, personnel_id: str) -> dict:
         """
         Create a family group for a personnel and their dependents
 
-        A personnel can have only ONE family group
+        Only authority can create family groups.
+        A personnel can have only ONE family group.
 
         Args:
             personnel_id: Personnel user ID
@@ -76,6 +88,10 @@ class GroupService:
             group_id or error
         """
         try:
+            authority = self.db.users.find_one({"_id": ObjectId(authority_id)})
+            if not authority or authority.get("role") != "authority":
+                return {"status": "error", "message": "Only authority can create family groups"}
+
             personnel = self.db.users.find_one({"_id": ObjectId(personnel_id)})
             if not personnel or personnel.get("role") != "personnel":
                 return {"status": "error", "message": "Only personnel can have family groups"}
@@ -89,20 +105,21 @@ class GroupService:
             if existing:
                 return {"status": "error", "message": "Personnel already has a family group"}
 
-            # Get dependents
-            dependents = personnel.get("dependents", [])
             members = [ObjectId(personnel_id)]
 
-            # Add dependent user IDs to members
+            dependents = personnel.get("dependents", [])
             for dependent in dependents:
                 dependent_user_id = dependent.get("user_id")
                 if dependent_user_id:
-                    members.append(ObjectId(dependent_user_id))
+                    dep_obj = ObjectId(dependent_user_id)
+                    if dep_obj not in members:
+                        members.append(dep_obj)
 
             group_doc = {
                 "name": f"{personnel.get('username')}'s Family Group",
                 "type": "family",
-                "created_by": ObjectId(personnel_id),
+                "created_by": ObjectId(authority_id),
+                "owner_personnel_id": ObjectId(personnel_id),
                 "members": members,
                 "created_at": datetime.utcnow()
             }
@@ -170,6 +187,22 @@ class GroupService:
                         "message": "Only personnel can be added to official groups"
                     }
 
+            # For family groups: only linked dependents can be added.
+            if group.get("type") == "family":
+                new_member = self.db.users.find_one({"_id": ObjectId(new_member_id)})
+                if not new_member or new_member.get("role") != "dependent":
+                    return {
+                        "status": "error",
+                        "message": "Only dependents can be added to family groups"
+                    }
+
+                linked = new_member.get("linked_personnel_id")
+                if str(linked) != str(authorized_by):
+                    return {
+                        "status": "error",
+                        "message": "Dependent is not linked to this personnel"
+                    }
+
             # Add member
             if ObjectId(new_member_id) not in group.get("members", []):
                 self.db.groups.update_one(
@@ -189,9 +222,17 @@ class GroupService:
         Remove a member from a group
         """
         try:
+            group = self.db.groups.find_one({"_id": ObjectId(group_id)})
+            if not group:
+                return {"status": "error", "message": "Group not found"}
+
             authorizer = self.db.users.find_one({"_id": ObjectId(authorized_by)})
             if not authorizer or authorizer.get("role") != "authority":
                 return {"status": "error", "message": "Only authority can remove members"}
+
+            # Do not allow removing group creator from members.
+            if str(member_id) == str(group.get("created_by")):
+                return {"status": "error", "message": "Cannot remove group creator"}
 
             self.db.groups.update_one(
                 {"_id": ObjectId(group_id)},
