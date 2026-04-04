@@ -1,6 +1,6 @@
-# Getting Started with SENTRIX
+# Getting Started with VRYA
 
-Quick start guide for setting up and running the SENTRIX Flutter application.
+Quick start guide for setting up and running the VRYA Flutter application.
 
 ## Prerequisites
 
@@ -98,15 +98,15 @@ lib/
 Use these credentials to test the app:
 
 ### Admin Account
-- **Email**: admin@sentrix.com
+- **Email**: admin@vrya.com
 - **Password**: Password123
 
 ### Personnel Account
-- **Email**: personnel@sentrix.com
+- **Email**: personnel@vrya.com
 - **Password**: Password123
 
 ### Dependent Account
-- **Email**: dependent@sentrix.com
+- **Email**: dependent@vrya.com
 - **Password**: Password123
 
 ## Common Commands

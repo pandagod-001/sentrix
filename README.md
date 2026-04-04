@@ -1,12 +1,12 @@
-# SENTRIX
+# VRYA
 
-SENTRIX is a secure communication platform built around a FastAPI backend and a Flutter frontend. It is designed for controlled environments where user identity, device trust, and message access must be enforced centrally rather than only at login time.
+VRYA is a secure communication platform built around a FastAPI backend and a Flutter frontend. It is designed for controlled environments where user identity, device trust, and message access must be enforced centrally rather than only at login time.
 
 The system combines authentication, biometric verification, device binding, approval workflows, and real-time chat. It also includes a local fallback database so the backend can keep working even when MongoDB is unavailable during development.
 
 ## What This Project Does
 
-SENTRIX provides:
+VRYA provides:
 
 - Username and password authentication with JWT access tokens
 - Device-based session binding
@@ -33,7 +33,7 @@ Typical flow:
 ## Repository Structure
 
 ```text
-sentrix/
+vrya/
 ├── app/                     Backend application
 │   ├── main.py              FastAPI entry point
 │   ├── database.py          MongoDB plus local fallback storage
@@ -72,7 +72,7 @@ The DSIE layer evaluates requests against the current security state. It can all
 
 ### Database Strategy
 
-SENTRIX uses MongoDB when available. If MongoDB is not reachable during local development, the backend switches to a file-backed in-memory fallback store so data still survives process restarts.
+VRYA uses MongoDB when available. If MongoDB is not reachable during local development, the backend switches to a file-backed in-memory fallback store so data still survives process restarts.
 
 This is useful for:
 
@@ -197,7 +197,7 @@ Adjust the IP address to match the machine running the backend on your network.
 
 ## Deployment
 
-SENTRIX can be deployed in a local network for internal testing or in a production environment with a public backend and a hosted frontend.
+VRYA can be deployed in a local network for internal testing or in a production environment with a public backend and a hosted frontend.
 
 ### Local Network Deployment
 
@@ -205,7 +205,7 @@ Use this setup when the backend and frontend run on machines inside the same LAN
 
 1. Start the backend on the server machine.
 2. Bind the backend to `0.0.0.0` so it listens on the network interface.
-3. Use the server's LAN IP address in the Flutter `SENTRIX_API_BASE_URL` setting.
+3. Use the server's LAN IP address in the Flutter API base URL setting.
 4. Make sure the backend port is reachable from other devices on the network.
 5. Install the APK or run the Flutter app on the target device.
 
@@ -276,7 +276,7 @@ Recommended local flow:
 
 1. Start the backend on port 8014.
 2. Confirm the health endpoint responds.
-3. Start the Flutter app with the matching `SENTRIX_API_BASE_URL`.
+3. Start the Flutter app with the matching backend API base URL.
 4. Log in with a test account.
 5. Open the home screen or chat screen to view approved personnel.
 
@@ -294,7 +294,7 @@ You can also run individual test modules when debugging a specific flow.
 
 ### Local Persistence
 
-When MongoDB is unavailable, SENTRIX falls back to a local serialized store. This keeps test data and demo conversations available across restarts.
+When MongoDB is unavailable, VRYA falls back to a local serialized store. This keeps test data and demo conversations available across restarts.
 
 ### Chat Access Policy
 
@@ -315,7 +315,7 @@ The backend returns approved users for discovery and chat creation. The Flutter 
 ### Frontend shows old data
 
 - Rebuild or restart the app after changing backend endpoints or UI code.
-- Confirm `SENTRIX_API_BASE_URL` points to the machine where the backend is running.
+- Confirm the backend API base URL points to the machine where the backend is running.
 - On Android emulator, use `http://10.0.2.2:8014`.
 
 ### Users do not appear in the UI
@@ -345,4 +345,4 @@ Proprietary. All rights reserved.
 
 ## Summary
 
-SENTRIX is a secure communication system for controlled environments. It is designed to keep identity, trust, and access decisions under backend control while still providing a usable chat experience through a Flutter client.
+VRYA is a secure communication system for controlled environments. It is designed to keep identity, trust, and access decisions under backend control while still providing a usable chat experience through a Flutter client.

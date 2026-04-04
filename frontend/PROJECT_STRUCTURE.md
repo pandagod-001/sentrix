@@ -1,7 +1,7 @@
-# SENTRIX Project Structure - Complete Verification
+# VRYA Project Structure - Complete Verification
 
 ## Project Summary
-- **Project Name**: SENTRIX
+- **Project Name**: VRYA
 - **Total Files**: 95+ (91 Dart files + pubspec.yaml + README.md + CHANGELOG.md + configuration files)
 - **Total Lines of Code**: 30,000+
 - **Development Status**: Production Ready
@@ -246,19 +246,19 @@
 ## Test Accounts
 
 ### Admin Account
-- Email: `admin@sentrix.com`
+- Email: `admin@vrya.com`
 - Password: `Password123`
 - Role: Administrator
 - Access: Full system control, user management, approvals
 
 ### Personnel Account
-- Email: `personnel@sentrix.com`
+- Email: `personnel@vrya.com`
 - Password: `Password123`
 - Role: Personnel
 - Access: Standard communication, limited admin features
 
 ### Dependent Account
-- Email: `dependent@sentrix.com`
+- Email: `dependent@vrya.com`
 - Password: `Password123`
 - Role: Dependent
 - Access: Basic chat and features, no QR scanning

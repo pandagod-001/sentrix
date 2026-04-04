@@ -1,4 +1,4 @@
-# Backend-Frontend Integration Guide
+# VRYA Backend-Frontend Integration Guide
 
 ## ✅ What's Connected
 
@@ -49,7 +49,7 @@ static const String apiBaseUrl = 'http://192.168.x.x:8000'; // Your machine's lo
 ### Production
 ```dart
 // In app_config.dart, change:
-static const String apiBaseUrl = 'https://api.sentrix.com'; // Your production URL
+static const String apiBaseUrl = 'https://api.vrya.com'; // Your production URL
 ```
 
 ## 🚀 Backend Requirements
@@ -85,7 +85,7 @@ python -m uvicorn app.main:app --reload --port 8000
 
 1. **Start Backend**
    ```bash
-   cd c:\Users\Shashank\OneDrive\Desktop\sentrix
+  cd c:\Users\Shashank\OneDrive\Desktop\vrya
    pip install -r requirements.txt
    python -m uvicorn app.main:app --reload
    ```

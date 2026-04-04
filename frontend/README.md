@@ -1,6 +1,6 @@
-# SENTRIX Frontend
+# VRYA Frontend
 
-SENTRIX Frontend is the Flutter client for the SENTRIX secure communication platform. It provides the user interface for authentication, approval flows, direct chat, group chat, QR-based flows, and role-based navigation.
+VRYA Frontend is the Flutter client for the VRYA secure communication platform. It provides the user interface for authentication, approval flows, direct chat, group chat, QR-based flows, and role-based navigation.
 
 The app is built to work with the FastAPI backend in this repository. It supports mobile, desktop, and development builds, and it is designed to consume the backend API over a configurable base URL.
 
@@ -75,7 +75,7 @@ lib/
 
 ## Design System
 
-The Flutter UI uses the shared SENTRIX design language:
+The Flutter UI uses the shared VRYA design language:
 
 - Dark text with high-contrast surfaces
 - Gradient-driven accent styling
@@ -90,7 +90,7 @@ To run the frontend, install:
 - Flutter SDK
 - Dart SDK
 - Android SDK for Android development
-- A running SENTRIX backend
+- A running VRYA backend
 
 ## Setup
 
@@ -154,7 +154,7 @@ flutter build web --release --dart-define=SENTRIX_API_BASE_URL=https://api.yourd
 
 ## Backend Integration
 
-The frontend expects the backend API to be available at the URL passed through `SENTRIX_API_BASE_URL`.
+The frontend expects the backend API to be available at the configured base URL.
 
 Important integration points:
 
@@ -174,7 +174,7 @@ This mode is useful for testing on multiple devices inside the same LAN.
 
 1. Start the backend on a server machine.
 2. Bind the backend to `0.0.0.0`.
-3. Use the server's LAN IP address as `SENTRIX_API_BASE_URL`.
+3. Use the server's LAN IP address as the configured backend base URL.
 4. Make sure the backend port is reachable from the client device.
 5. Install the APK or run the Flutter app on the target device.
 
@@ -226,7 +226,7 @@ Approved users are loaded into the chat UI so personnel can start direct convers
 ### App does not connect to the backend
 
 - Confirm the backend is running.
-- Check the `SENTRIX_API_BASE_URL` value.
+- Check the configured backend base URL value.
 - Use `10.0.2.2` for Android emulator access to a local backend.
 
 ### UI changes do not appear
