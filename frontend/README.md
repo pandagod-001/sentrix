@@ -1,213 +1,255 @@
-# SENTRIX - Secure Defence Communication App
+# SENTRIX Frontend
 
-A comprehensive, production-ready Flutter application for secure, role-based defence communication with support for authentication, encrypted messaging, group management, and administrative controls.
+SENTRIX Frontend is the Flutter client for the SENTRIX secure communication platform. It provides the user interface for authentication, approval flows, direct chat, group chat, QR-based flows, and role-based navigation.
 
-## Features
+The app is built to work with the FastAPI backend in this repository. It supports mobile, desktop, and development builds, and it is designed to consume the backend API over a configurable base URL.
 
-### 🔐 Security & Authentication
-- Multi-factor authentication with biometric (face) recognition
-- Device verification and approval workflows
-- Secure token-based session management
-- Encrypted message storage and transmission
+## What This App Does
 
-### 💬 Communication
-- Real-time messaging with socket support
-- One-on-one and group chats
-- Message history and persistence
-- Typing indicators and read receipts
+The Flutter client provides:
 
-### 👥 Role-Based Access Control
-- Three user roles: Admin, Personnel, Dependent
-- Role-specific UI and feature access
-- Approval workflows for sensitive operations
-- User management and personnel administration
+- Login and device verification flows
+- Face authentication screens
+- Home dashboards for role-based navigation
+- Direct chat and group chat interfaces
+- User discovery and chat creation for approved users
+- QR display and QR scanning flows
+- Settings, profile, and support screens
+- Real-time socket-driven conversation updates
 
-### 📱 Additional Features
-- QR code generation, scanning, and validation
-- Group management with member administration
-- Comprehensive settings with 40+ configurable options
-- Real-time notifications
-- Network monitoring
-- Analytics and event tracking
-- Local and remote data synchronization
+## App Structure
 
-## Project Structure
-
-```
+```text
 lib/
-├── main.dart                 # App entry point
-├── core/                     # Core configuration and utilities
-│   ├── config/              # App configuration
-│   ├── constants/           # App-wide constants (colors, strings, enums, assets)
-│   ├── routes/              # Routing configuration
-│   └── theme/               # Theme and typography
-├── features/                # Feature modules
-│   ├── admin/               # Administrative dashboard and management
-│   ├── auth/                # Authentication flows
-│   ├── chat/                # Direct messaging
-│   ├── dependent/           # Dependent user interfaces
-│   ├── error/               # Error handling
-│   ├── groups/              # Group management and group chat
-│   ├── home/                # Home screen and navigation
-│   ├── notifications/       # Notification handling
-│   ├── qr/                  # QR code features
-│   └── settings/            # User settings and preferences
-├── models/                  # Shared data models
-├── services/                # Backend services
-│   ├── api_service.dart              # Mock API endpoints
-│   ├── auth_service.dart             # Authentication logic
-│   ├── notification_service.dart     # Notification management
-│   ├── database_service.dart         # Local data persistence
-│   ├── file_service.dart             # File operations
-│   ├── log_service.dart              # Logging and debugging
-│   ├── face_auth_service.dart        # Biometric authentication
-│   ├── socket_service.dart           # Real-time messaging
-│   ├── analytics_service.dart        # Event tracking
-│   ├── data_sync_service.dart        # Data synchronization
-│   └── network_monitor.dart          # Connectivity monitoring
-├── shared/                  # Shared widgets and layouts
-│   ├── layouts/             # Application layouts
-│   └── widgets/             # Reusable UI components
-└── utils/                   # Utilities and helpers
-    ├── validators.dart              # Form field validators
-    ├── formatters.dart              # Data formatting utilities
-    ├── extensions.dart              # Dart language extensions
-    └── helpers.dart                 # General helper functions
+├── main.dart                     App entry point
+├── core/                         Core configuration, routes, themes, and constants
+├── features/                     Feature modules by domain
+│   ├── admin/                    Admin dashboard and management screens
+│   ├── auth/                     Login, face auth, device verification, splash
+│   ├── chat/                     Direct chat list, chat screen, message widgets
+│   ├── dependent/                Dependent home screen and restricted UI
+│   ├── error/                    Not found and access denied screens
+│   ├── groups/                   Group list, group detail, and group chat
+│   ├── home/                     Home dashboard and role routing
+│   ├── notifications/            Notification state and handling
+│   ├── qr/                       QR display, scan, and result screens
+│   └── settings/                 Profile and settings screens
+├── models/                       Shared data models
+├── services/                     API, auth, socket, storage, and utility services
+├── shared/                       Shared layouts and reusable widgets
+└── utils/                        Formatters, helpers, validators, and role helpers
 ```
+
+## Key Features
+
+### Authentication and Security
+
+- Username and password login
+- JWT session handling
+- Device binding support
+- Face verification support
+- Approval-aware access control
+
+### Messaging
+
+- Direct messages between approved users
+- Group messaging
+- Chat history and previews
+- Real-time socket updates
+- User discovery for new chat creation
+
+### Role-Based Experience
+
+- Authority dashboard and approvals
+- Personnel dashboard and chat access
+- Dependent restrictions where applicable
+- Screen routing based on the signed-in role
+
+### Platform Features
+
+- QR code generation and scanning
+- Notifications
+- Network monitoring
+- Analytics hooks
+- Local and remote data sync support
 
 ## Design System
 
-SENTRIX implements a cohesive, modern design system:
+The Flutter UI uses the shared SENTRIX design language:
 
-- **Color Palette**: Single gradient from #FF7A18 (Orange) → #AF4DFF (Purple) → #3B82F6 (Blue)
-- **Background**: #F8FAFC (Light Blue Gray)
-- **Cards & Surfaces**: #FFFFFF (White)
-- **Text Colors**: #0F172A (Dark), #64748B (Medium), #94A3B8 (Light)
-- **Border Radius**: 16-24px on all components
-- **Shadows**: Soft, subtle shadows throughout (no hard shadows)
-- **Button Style**: Gradient buttons only (no solid colored buttons)
+- Dark text with high-contrast surfaces
+- Gradient-driven accent styling
+- Rounded cards and soft shadows
+- Consistent spacing and typography
+- Feature-specific dashboards rather than one generic layout
 
-## Installation & Setup
+## Prerequisites
 
-### Prerequisites
-- Flutter SDK 3.0.0 or higher
-- Dart SDK 3.0.0 or higher
-- Android SDK (for Android development)
-- Xcode (for iOS development, macOS only)
+To run the frontend, install:
 
-### Steps
+- Flutter SDK
+- Dart SDK
+- Android SDK for Android development
+- A running SENTRIX backend
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd flutter
-   ```
+## Setup
 
-2. **Install dependencies**
-   ```bash
-   flutter pub get
-   ```
+From the `frontend` directory:
 
-3. **Run the app**
-   ```bash
-   flutter run
-   ```
-
-4. **Build for production**
-   ```bash
-   # Android
-   flutter build apk --release
-
-   # iOS
-   flutter build ios --release
-   ```
-
-## Test Credentials
-
-The app includes built-in test accounts for demonstration:
-
-### Admin Account
-- **Email**: admin@sentrix.com
-- **Password**: Password123
-- **Access**: Full administrative controls, user management, approvals
-
-### Personnel Account
-- **Email**: personnel@sentrix.com
-- **Password**: Password123
-- **Access**: Standard communication features, restricted admin access
-
-### Dependent Account
-- **Email**: dependent@sentrix.com
-- **Password**: Password123
-- **Access**: Limited to chat and basic features, QR scanning restricted
-
-## Development
-
-### File Organization
-- Each feature is self-contained with its own controllers, models, screens, and widgets
-- Services are centralized and accessible via the ServiceLocator
-- Common utilities and helpers are in the utils directory
-- Shared components are in the shared directory
-
-### State Management
-- Uses **Provider** for state management
-- Controllers extend `ChangeNotifier` for reactive updates
-- Services use singleton pattern via ServiceLocator
-
-### API Integration
-- Mock API endpoints in `services/api_service.dart`
-- Real backend integration ready (replace mock calls with actual HTTP)
-- Built-in error handling and retry logic
-
-### Logging & Debugging
-- Comprehensive logging service in `services/log_service.dart`
-- Analytics service for event tracking
-- Network monitoring for connectivity issues
-- Runtime error tracking and display
-
-## Backend Integration
-
-To integrate with a real backend:
-
-1. Update `services/api_service.dart` with actual endpoint URLs
-2. Replace mock data returns with real HTTP calls
-3. Update authentication in `services/auth_service.dart` with real token management
-4. Configure Firebase configuration files for notifications and authentication
-
-## Contributing
-
-Follow these guidelines when extending SENTRIX:
-- Maintain the established folder structure
-- Use the design system consistently
-- Document complex functions with comments
-- Follow Dart style guidelines
-- Test all changes thoroughly
-
-## Security Considerations
-
-- All sensitive data should be encrypted before storage
-- Use Flutter Secure Storage for tokens and credentials
-- Implement SSL pinning for API communications
-- Validate all user inputs
-- Regular security audits recommended
-
-## Troubleshooting
-
-### Dependencies Issues
 ```bash
-flutter clean
 flutter pub get
 ```
 
-### Build Issues
+If you are using VS Code, select the Flutter device or emulator you want to run on before launching the app.
+
+## Running the App
+
+### Windows Desktop
+
+```bash
+flutter run -d windows --dart-define=SENTRIX_API_BASE_URL=http://127.0.0.1:8014
+```
+
+### Android Emulator
+
+Use the emulator loopback address:
+
+```bash
+flutter run --dart-define=SENTRIX_API_BASE_URL=http://10.0.2.2:8014
+```
+
+### Physical Device or Local Network
+
+If the backend is running on another machine in the same network, use that machine's LAN IP address:
+
+```bash
+flutter run --dart-define=SENTRIX_API_BASE_URL=http://192.168.1.104:8014
+```
+
+## Building
+
+### Debug APK
+
+```bash
+flutter build apk --debug --dart-define=SENTRIX_API_BASE_URL=http://192.168.1.104:8014
+```
+
+### Release APK
+
+```bash
+flutter build apk --release --dart-define=SENTRIX_API_BASE_URL=https://api.yourdomain.com
+```
+
+### Windows Release Build
+
+```bash
+flutter build windows --release --dart-define=SENTRIX_API_BASE_URL=https://api.yourdomain.com
+```
+
+### Web Release Build
+
+```bash
+flutter build web --release --dart-define=SENTRIX_API_BASE_URL=https://api.yourdomain.com
+```
+
+## Backend Integration
+
+The frontend expects the backend API to be available at the URL passed through `SENTRIX_API_BASE_URL`.
+
+Important integration points:
+
+- Authentication requests
+- Approved user listing
+- Chat creation and message sending
+- Group retrieval and creation
+- QR and face verification endpoints
+
+If you change backend routes or response shapes, update `lib/services/api_service.dart` and the related feature controllers.
+
+## Deployment
+
+### Local Network Deployment
+
+This mode is useful for testing on multiple devices inside the same LAN.
+
+1. Start the backend on a server machine.
+2. Bind the backend to `0.0.0.0`.
+3. Use the server's LAN IP address as `SENTRIX_API_BASE_URL`.
+4. Make sure the backend port is reachable from the client device.
+5. Install the APK or run the Flutter app on the target device.
+
+Example:
+
+```bash
+flutter build apk --release --dart-define=SENTRIX_API_BASE_URL=http://192.168.1.104:8014
+```
+
+### Production Deployment
+
+For production, build the app against the hosted backend URL and distribute the compiled app through your normal release process.
+
+Recommended steps:
+
+1. Host the backend on a server with HTTPS enabled.
+2. Use a stable API domain such as `https://api.yourdomain.com`.
+3. Build the Flutter app with the production API URL.
+4. Distribute the APK, desktop build, or web build to your users.
+5. Keep backend and frontend CORS settings aligned if you are using the web build.
+
+Example production build:
+
+```bash
+flutter build apk --release --dart-define=SENTRIX_API_BASE_URL=https://api.yourdomain.com
+```
+
+## Development Notes
+
+### State Management
+
+- Provider is used for app-wide and feature-specific state
+- Controllers extend `ChangeNotifier`
+- Feature logic stays in controllers and services rather than widgets
+
+### Service Layer
+
+- `api_service.dart` handles backend communication
+- `auth_service.dart` manages authentication-related logic
+- `socket_service.dart` manages live chat connections
+- `database_service.dart` supports local persistence where needed
+
+### User Discovery
+
+Approved users are loaded into the chat UI so personnel can start direct conversations without manual API usage.
+
+## Troubleshooting
+
+### App does not connect to the backend
+
+- Confirm the backend is running.
+- Check the `SENTRIX_API_BASE_URL` value.
+- Use `10.0.2.2` for Android emulator access to a local backend.
+
+### UI changes do not appear
+
+- Restart the app instead of relying on hot reload for large navigation or service changes.
+- Run a fresh build if you changed API constants or route logic.
+
+### Users are not listed in chat discovery
+
+- Make sure the backend `/api/users` endpoint is returning approved users.
+- Confirm the logged-in user is approved.
+- Check the Flutter console for API errors.
+
+### Build problems
+
 ```bash
 flutter clean
-flutter pub cache clean
 flutter pub get
 flutter run -v
 ```
 
-### Gradle Issues (Android)
+For Android-specific issues:
+
 ```bash
 cd android
 ./gradlew clean
@@ -215,16 +257,26 @@ cd ..
 flutter run
 ```
 
+## Testing
+
+Run Flutter analyzer checks from the `frontend` folder:
+
+```bash
+flutter analyze
+```
+
+If you want a more complete validation, run the backend test suite from the repository root as well.
+
+## Contributing
+
+When extending the Flutter app:
+
+- Keep feature code inside the matching feature folder
+- Update the controller and service layer together when changing API behavior
+- Preserve the role-based navigation flow
+- Avoid committing generated build artifacts
+- Test the target platform after UI or routing changes
+
 ## License
 
-Proprietary - All rights reserved to SENTRIX
-
-## Support
-
-For issues, feature requests, or questions, please contact the development team.
-
----
-
-**Version**: 1.0.0
-**Last Updated**: 2024
-**Status**: Production Ready
+Proprietary. All rights reserved.

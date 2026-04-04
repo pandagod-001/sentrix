@@ -1,169 +1,348 @@
-The system integrates authentication, biometric verification, device binding, and a dynamic security engine to enforce strict access control.
+# SENTRIX
 
-Core Idea
+SENTRIX is a secure communication platform built around a FastAPI backend and a Flutter frontend. It is designed for controlled environments where user identity, device trust, and message access must be enforced centrally rather than only at login time.
 
-Traditional systems:
+The system combines authentication, biometric verification, device binding, approval workflows, and real-time chat. It also includes a local fallback database so the backend can keep working even when MongoDB is unavailable during development.
 
-Authenticate once → allow everything
+## What This Project Does
 
-SENTRIX:
+SENTRIX provides:
 
-Authenticate → Verify identity → Validate device → Monitor behavior → Allow or block in real-time
+- Username and password authentication with JWT access tokens
+- Device-based session binding
+- Face verification support for high-risk actions
+- Real-time direct messaging through WebSockets
+- Group messaging and group management
+- User approval flows for restricted accounts
+- A Flutter client for mobile and desktop usage
+- A local fallback database for offline or development mode
 
-This ensures that even if credentials are compromised, unauthorized access is prevented.
+## System Overview
 
-Architecture Flow
+The security model is not based on a single login check. Instead, it evaluates whether a user is approved, whether the device is trusted, and whether the active session is still valid.
 
-User → Login → JWT Token
-   ↓
-Face Registration & Verification
-   ↓
-Device Binding
-   ↓
-DSIE Security Engine (Risk Evaluation)
-   ↓
-WebSocket Communication (Real-time chat)
+Typical flow:
 
-Key Components
-1. Authentication (JWT)
-Users log in using credentials
-Backend generates a JWT token
-Token is required for all protected routes
+1. User logs in with credentials.
+2. Backend issues a JWT token.
+3. The user is validated against device binding and approval state.
+4. Face verification may be required depending on policy.
+5. The user can then access chats, groups, and other permitted screens.
+6. WebSocket messages are checked before delivery.
 
-Security:
+## Repository Structure
 
-Stateless authentication
-Token-based identity propagation
-2. Face Verification System
-Users register their face (base64 image → embedding)
-Verification is required before accessing chat
-Stored encoding is compared during verification
+```text
+sentrix/
+├── app/                     Backend application
+│   ├── main.py              FastAPI entry point
+│   ├── database.py          MongoDB plus local fallback storage
+│   ├── dsie.py              Core security policy layer
+│   ├── models.py            Backend data helpers
+│   ├── routes/              API route handlers
+│   ├── services/            Business logic and security services
+│   └── utils/               Response and utility helpers
+├── frontend/                Flutter application
+│   ├── lib/                 UI, state management, services, models
+│   ├── android/             Android build files
+│   ├── windows/             Windows desktop build files
+│   └── pubspec.yaml         Flutter dependencies
+├── tests/                   Backend and integration tests
+├── requirements.txt         Python dependencies
+└── README.md                Project documentation
+```
 
-Purpose:
+## Backend Architecture
 
-Prevent account misuse
-Add biometric security layer
-3. Device Binding
-First login binds a device ID to the user
-Future logins must match the same device
+The backend is built with FastAPI and organized around route modules and service modules.
 
-Security Benefit:
+### Main Backend Responsibilities
 
-Prevents login from unknown devices
-Stops credential sharing attacks
-4. DSIE (Dynamic Security Intelligence Engine)
+- Authenticate users
+- Approve users and manage onboarding
+- Return approved users for chat selection
+- Create and fetch chats
+- Send and receive messages
+- Manage groups and dependent relationships
+- Enforce security and access policy decisions
 
-This is the core of the system.
+### Security Engine
 
-Instead of static rules, DSIE calculates a risk score for every action.
+The DSIE layer evaluates requests against the current security state. It can allow, block, or require reauthentication depending on policy and session state.
 
-Inputs:
-User role
-Device ID
-Face verification status
-Activity behavior
-Message frequency
-Metadata (optional)
-Output:
-ALLOW → normal operation
-REAUTH → require face verification again
-BLOCK → deny access
-Example:
-Device mismatch → increases risk
-Rapid message spam → increases risk
-Unverified face → increases risk
-5. Role-Based Access Control
+### Database Strategy
 
-Roles:
+SENTRIX uses MongoDB when available. If MongoDB is not reachable during local development, the backend switches to a file-backed in-memory fallback store so data still survives process restarts.
 
-Dependent
-Can only chat with linked personnel
-Cannot create groups
-Restricted environment
-Personnel
-Can chat with multiple users
-Can create groups
-Moderate privileges
-Authority
-Full control
-Can approve users
-Can link dependents
+This is useful for:
 
-All rules are enforced in backend (not frontend).
+- Local development without Atlas connectivity
+- Automated testing
+- Demo environments
+- Offline development workflows
 
-6. WebSocket Real-Time Communication
-Persistent connection using WebSockets
-Messages are sent instantly between users
+## Frontend Architecture
 
-Security enforced before every message:
+The frontend is a Flutter application that consumes the FastAPI backend.
 
-DSIE check
-Device validation
-Face verification status
-7. API Design
+### Frontend Responsibilities
 
-All APIs follow a strict format:
+- Authentication screens and session handling
+- Home dashboard by user role
+- Direct chat list and chat screen
+- Group list and group chat screens
+- QR code and face-related flows
+- Settings and profile views
+- State management for remote data and chat updates
 
-Success
+### Chat Experience
 
-{
-"success": true,
-"message": "optional",
-"data": {}
-}
+The app allows approved personnel to discover other approved personnel and start a direct chat from the UI. Direct chats are backed by the backend chat creation endpoint and WebSocket message delivery.
 
-Error
+## Features
 
-{
-"success": false,
-"message": "Error message"
-}
+### Security and Identity
 
-This ensures predictable frontend integration.
+- JWT-based authentication
+- Device verification
+- Face verification support
+- User approval workflow
+- Risk-based security checks
 
-Features
-JWT Authentication
-Face Recognition (Biometric Security)
-Device Binding
-Risk-Based Security Engine (DSIE)
-Real-time WebSocket Chat
-Role-Based Access Control
-Structured API Responses
-Tech Stack
-FastAPI (Backend Framework)
-Python
-WebSockets (real-time communication)
-OpenCV / Face Recognition
-Custom Security Engine (DSIE)
-Running the Project
-uvicorn app.main:app --reload
-Testing
+### Messaging
 
-Run full backend test suite:
+- Direct messages between approved users
+- Real-time WebSocket chat
+- Chat history persistence
+- Group messaging support
+- Conversation list and message previews
 
+### User Management
+
+- Authority account approval flow
+- Personnel and dependent account handling
+- Approved-user listing for chat creation
+- Role-aware dashboard navigation
+
+### Platform Support
+
+- Flutter mobile support
+- Flutter desktop support
+- Development-friendly fallback database
+
+## Prerequisites
+
+To run the full stack locally, install:
+
+- Python 3.13 or compatible version used by the virtual environment
+- Flutter SDK
+- Android SDK if you plan to run on Android
+- MongoDB if you want to use the remote database instead of fallback mode
+
+## Backend Setup
+
+From the repository root:
+
+```bash
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### Run the backend
+
+```bash
+$env:HOST='0.0.0.0'
+$env:PORT='8014'
+python -m app.main
+```
+
+If MongoDB is not available, the backend will start with the local fallback database automatically.
+
+### Backend health check
+
+```bash
+curl http://127.0.0.1:8014/health
+```
+
+## Frontend Setup
+
+From the `frontend` folder:
+
+```bash
+flutter pub get
+```
+
+### Run on Windows desktop
+
+```bash
+flutter run -d windows --dart-define=SENTRIX_API_BASE_URL=http://127.0.0.1:8014
+```
+
+### Run on Android emulator
+
+Use the emulator loopback address when the app runs inside the emulator:
+
+```bash
+flutter run --dart-define=SENTRIX_API_BASE_URL=http://10.0.2.2:8014
+```
+
+### Build an APK
+
+```bash
+flutter build apk --debug --dart-define=SENTRIX_API_BASE_URL=http://192.168.1.104:8014
+```
+
+Adjust the IP address to match the machine running the backend on your network.
+
+## Deployment
+
+SENTRIX can be deployed in a local network for internal testing or in a production environment with a public backend and a hosted frontend.
+
+### Local Network Deployment
+
+Use this setup when the backend and frontend run on machines inside the same LAN.
+
+1. Start the backend on the server machine.
+2. Bind the backend to `0.0.0.0` so it listens on the network interface.
+3. Use the server's LAN IP address in the Flutter `SENTRIX_API_BASE_URL` setting.
+4. Make sure the backend port is reachable from other devices on the network.
+5. Install the APK or run the Flutter app on the target device.
+
+Example backend command:
+
+```bash
+$env:HOST='0.0.0.0'
+$env:PORT='8014'
+python -m app.main
+```
+
+Example Flutter command for an Android device on the same network:
+
+```bash
+flutter run --dart-define=SENTRIX_API_BASE_URL=http://192.168.1.104:8014
+```
+
+For a packaged APK, build with the same backend URL:
+
+```bash
+flutter build apk --release --dart-define=SENTRIX_API_BASE_URL=http://192.168.1.104:8014
+```
+
+### Production Backend Deployment
+
+For production, the backend should be hosted on a stable server with a public or private domain, proper TLS, and a managed MongoDB instance.
+
+Recommended production steps:
+
+1. Use a process manager such as systemd, Supervisor, or a Windows service to keep the backend running.
+2. Put the FastAPI app behind a reverse proxy such as Nginx or Apache.
+3. Serve the API over HTTPS.
+4. Point `MONGODB_URI` to the production database.
+5. Set strong secrets for JWT signing and any other runtime keys.
+6. Restrict firewall rules to allow only the required ports.
+7. Monitor application logs and database connectivity.
+
+Example production start command:
+
+```bash
+python -m app.main
+```
+
+In production, `HOST` and `PORT` should be supplied by the hosting environment or service configuration.
+
+### Production Frontend Deployment
+
+The Flutter app can be deployed as a release APK, a desktop app, or a web build depending on your target platform.
+
+Recommended approach:
+
+1. Build the frontend against the production API base URL.
+2. Distribute the APK through your internal app channel or device management tool.
+3. For desktop, package the release build and point it to the production API.
+4. For web, host the built files behind a static hosting provider and ensure the API allows the required CORS origins.
+
+Example release build:
+
+```bash
+flutter build apk --release --dart-define=SENTRIX_API_BASE_URL=https://api.yourdomain.com
+```
+
+If you deploy the web frontend, update CORS settings in the backend to allow the production frontend origin.
+
+## Running the Full Stack
+
+Recommended local flow:
+
+1. Start the backend on port 8014.
+2. Confirm the health endpoint responds.
+3. Start the Flutter app with the matching `SENTRIX_API_BASE_URL`.
+4. Log in with a test account.
+5. Open the home screen or chat screen to view approved personnel.
+
+## Testing
+
+Run backend tests from the repository root:
+
+```bash
 python -m tests.run_all_tests
-Why This Project Matters
+```
 
-Most systems rely on static authentication.
+You can also run individual test modules when debugging a specific flow.
 
-SENTRIX introduces:
+## Development Notes
 
-Continuous identity validation
-Behavioral monitoring
-Adaptive security decisions
+### Local Persistence
 
-This makes it suitable for:
+When MongoDB is unavailable, SENTRIX falls back to a local serialized store. This keeps test data and demo conversations available across restarts.
 
-Defence communication systems
-Secure enterprise messaging
-Controlled environments
-Future Enhancements
-Liveness detection (anti-spoofing)
-Geo-location anomaly detection
-Machine learning-based risk scoring
-End-to-end encryption
-Summary
+### Chat Access Policy
 
-SENTRIX is a secure communication backend that combines authentication, biometrics, device trust, and behavioral intelligence into a unified system.
+Approved users can message other approved users. The backend enforces the rule, and the frontend now exposes approved personnel in the UI so chats can be started directly.
 
-It moves beyond traditional login systems into continuous security enforcement.
+### User Discovery
+
+The backend returns approved users for discovery and chat creation. The Flutter home screen and chat list use that data to let users start a new direct conversation without manual API calls.
+
+## Troubleshooting
+
+### Backend will not start
+
+- Check whether another process is already using port 8014.
+- If MongoDB is unavailable, confirm the fallback database log appears.
+- Make sure the Python virtual environment is activated.
+
+### Frontend shows old data
+
+- Rebuild or restart the app after changing backend endpoints or UI code.
+- Confirm `SENTRIX_API_BASE_URL` points to the machine where the backend is running.
+- On Android emulator, use `http://10.0.2.2:8014`.
+
+### Users do not appear in the UI
+
+- Confirm the backend `/api/users` endpoint is returning approved users.
+- Make sure the account used for login is approved.
+- Verify the backend is running and reachable from the Flutter client.
+
+### APK build is rejected by GitHub
+
+- Do not commit large build artifacts such as APK files.
+- Keep generated binaries out of version control.
+
+## Contributing
+
+When making changes:
+
+- Keep backend route logic in the route modules and business rules in service modules.
+- Preserve the existing role and approval model.
+- Update both backend and frontend when changing data shapes.
+- Run tests and analyzer checks before committing.
+- Avoid committing generated build artifacts.
+
+## License
+
+Proprietary. All rights reserved.
+
+## Summary
+
+SENTRIX is a secure communication system for controlled environments. It is designed to keep identity, trust, and access decisions under backend control while still providing a usable chat experience through a Flutter client.
