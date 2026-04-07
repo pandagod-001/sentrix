@@ -324,10 +324,6 @@ The backend returns approved users for discovery and chat creation. The Flutter 
 - Make sure the account used for login is approved.
 - Verify the backend is running and reachable from the Flutter client.
 
-### APK build is rejected by GitHub
-
-- Do not commit large build artifacts such as APK files.
-- Keep generated binaries out of version control.
 
 ## Contributing
 
